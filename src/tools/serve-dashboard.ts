@@ -10,7 +10,9 @@ import { detectDashboardType, validateDashboardPath } from "../utils/validation"
 import { findProjectRoot } from "../utils/filesystem";
 
 interface ServeDashboardParams {
-  path: string;
+  path?: string;
+  content?: string;
+  type?: "static" | "react" | "vue" | "next" | "dynamic" | "markdown" | "json";
   persist?: boolean;
 }
 
@@ -36,13 +38,22 @@ export function serveDashboardTool(
 ): ServeDashboardToolDefinition {
   return {
     name: "serve_dashboard",
-    description: "Auto-detect and serve a dashboard via Tailscale. Supports static HTML, React, Vue, Next.js, and dynamic content.",
+    description: "Serve a dashboard, website, or web app via Tailscale. Auto-detects static HTML, React, Vue, Next.js, or dynamic content. Use when you want to share a dashboard with others on your tailnet. Examples: 'Serve this folder', 'Make this React app accessible', 'Share this HTML file', 'Host this dashboard'.",
     params: {
       type: "object",
       properties: {
         path: {
           type: "string",
-          description: "Path to the dashboard directory or file",
+          description: "Path to the dashboard directory or file. Defaults to current directory if omitted. If content is provided instead, creates a temporary dashboard.",
+        },
+        content: {
+          type: "string",
+          description: "Raw content to serve (HTML, Markdown, or JSON). If provided without path, creates a temporary file/dashboard.",
+        },
+        type: {
+          type: "string",
+          enum: ["static", "react", "vue", "next", "dynamic", "markdown", "json"],
+          description: "Explicit type override. Auto-detected if not provided.",
         },
         persist: {
           type: "boolean",
@@ -50,11 +61,43 @@ export function serveDashboardTool(
           default: true,
         },
       },
-      required: ["path"],
+      // Either path or content must be provided
+      required: [],
     },
     handler: async (params, ctx) => {
-      const resolvedPath = resolve(params.path);
       const persist = params.persist ?? true;
+      
+      // Handle content-only mode (no path provided)
+      if (!params.path && params.content) {
+        // Create a temporary dashboard from the content
+        const { serveDynamicTool } = await import("./serve-dynamic");
+        const dynamicTool = serveDynamicTool(tracker, config);
+        
+        // Determine type from content or explicit type
+        let contentType: "json" | "markdown" | "md" = "markdown";
+        if (params.type === "json") {
+          contentType = "json";
+        } else if (params.type === "markdown" || params.type === "md") {
+          contentType = "md";
+        } else if (params.content.trim().startsWith("{") || params.content.trim().startsWith("[")) {
+          contentType = "json";
+        }
+        
+        const result = await dynamicTool.handler(
+          { content: params.content, type: contentType, persist } as any,
+          ctx
+        );
+        return result as ServeDashboardResult;
+      }
+
+      // Path-based mode
+      let resolvedPath: string;
+      if (!params.path) {
+        // Default to current working directory if no path specified
+        resolvedPath = ctx.cwd;
+      } else {
+        resolvedPath = resolve(params.path);
+      }
 
       // Find project root
       const projectRoot = await findProjectRoot(ctx.cwd);

@@ -37,7 +37,7 @@ export function serveDynamicTool(
 
   return {
     name: "serve_dynamic",
-    description: "Serve dynamic content (JSON, Markdown) as a dashboard via Tailscale",
+    description: "Serve JSON data or Markdown content as a viewable dashboard via Tailscale. Auto-generates a viewer interface. Examples: 'Serve this JSON as a dashboard', 'Make this data browsable', 'Host this markdown report'.",
     params: {
       type: "object",
       properties: {

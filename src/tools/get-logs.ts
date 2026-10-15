@@ -21,7 +21,7 @@ interface GetLogsResult {
 export function getLogsTool(tracker: DashboardTracker): ToolDefinition<GetLogsParams, GetLogsResult> {
   return {
     name: "get_dashboard_logs",
-    description: "Get logs for a specific dashboard",
+    description: "Get the logs for a specific dashboard by its ID. Useful for debugging framework dev servers or access issues. Examples: 'Show me the logs for dashboard abc123', 'Get logs for that React app', 'What are the errors for my dashboard?'.",
     params: {
       type: "object",
       properties: {

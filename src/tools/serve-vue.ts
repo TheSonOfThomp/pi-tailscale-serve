@@ -41,7 +41,7 @@ export function serveVueTool(
 
   return {
     name: "serve_vue",
-    description: "Serve a Vue app as a dashboard via Tailscale",
+    description: "Serve a Vue.js application as a dashboard via Tailscale. Auto-detects and starts the Vue dev server. Examples: 'Serve this Vue app', 'Host my Vue dashboard', 'Make this Vue CLI app accessible'.",
     params: {
       type: "object",
       properties: {

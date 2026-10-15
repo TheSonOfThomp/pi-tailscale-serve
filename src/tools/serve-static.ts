@@ -35,7 +35,7 @@ export function serveStaticTool(
 
   return {
     name: "serve_static",
-    description: "Serve a directory of static files as a dashboard via Tailscale",
+    description: "Serve static HTML, CSS, and JavaScript files as a dashboard via Tailscale. Use for plain HTML websites, single-page apps, or static site generators like Hugo/Jekyll. Examples: 'Serve these static files', 'Host this HTML directory'.",
     params: {
       type: "object",
       properties: {

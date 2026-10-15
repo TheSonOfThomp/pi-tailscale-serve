@@ -41,7 +41,7 @@ export function serveReactTool(
 
   return {
     name: "serve_react",
-    description: "Serve a React app as a dashboard via Tailscale",
+    description: "Serve a React application as a dashboard via Tailscale. Auto-detects and starts the React dev server. Examples: 'Serve this React app', 'Host my React dashboard', 'Make this CRA/Vite app accessible'.",
     params: {
       type: "object",
       properties: {

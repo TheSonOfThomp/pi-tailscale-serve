@@ -15,7 +15,7 @@ export function listDashboardsTool(
 ): ToolDefinition<{}, ListDashboardsResult> {
   return {
     name: "list_dashboards",
-    description: "List all active dashboards served via Tailscale",
+    description: "List all currently served dashboards with their URLs, types, and access info. Use to see what's currently hosted or to find a dashboard URL. Examples: 'What dashboards are running?', 'Show me my hosted dashboards', 'List active serves'.",
     params: {
       type: "object",
       properties: {},

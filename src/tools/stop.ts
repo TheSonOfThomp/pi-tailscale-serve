@@ -25,7 +25,7 @@ export function stopTool(tracker: DashboardTracker): ToolDefinition<StopParams, 
 
   return {
     name: "stop",
-    description: "Stop serving a dashboard by port, URL, PID, or path",
+    description: "Stop serving a dashboard and clean up its resources. Can identify by port, URL, PID, or local path. Examples: 'Stop dashboard on port 3000', 'Stop serving that dashboard', 'Clean up the React app I served earlier', 'Remove dashboard at /path/to/files'.",
     params: {
       type: "object",
       properties: {

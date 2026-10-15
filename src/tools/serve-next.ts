@@ -41,7 +41,7 @@ export function serveNextTool(
 
   return {
     name: "serve_next",
-    description: "Serve a Next.js app as a dashboard via Tailscale",
+    description: "Serve a Next.js application as a dashboard via Tailscale. Auto-detects and starts the Next.js dev server. Examples: 'Serve this Next.js app', 'Host my Next dashboard', 'Make this Next.js app accessible'.",
     params: {
       type: "object",
       properties: {
