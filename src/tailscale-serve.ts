@@ -73,16 +73,15 @@ async function findAvailablePort(): Promise<number> {
 }
 
 // Helper: start static file server
-async function startStaticServer(path: string): Promise<{ process: ChildProcess; port: number }> {
+async function startStaticServer(servePath: string): Promise<{ process: ChildProcess; port: number }> {
   const port = await findAvailablePort();
   
-  // Use Node.js http-server or simple static server
-  // For now, use a simple Node.js static file server
+  // Use the static-server.js helper
+  const staticServerPath = join(__dirname, "static-server.js");
   const child = spawn(
     "node",
-    ["-e", `const http = require('http'); const fs = require('fs'); const path = require('path'); const url = require('url'); const server = http.createServer((req, res) => { const filepath = path.join('${path}', url.parse(req.url!).pathname); fs.readFile(filepath, (err, data) => { if (err) { res.writeHead(404); res.end('Not Found'); return; } const ext = path.extname(filepath); let contentType = 'text/html'; if (ext === '.css') contentType = 'text/css'; if (ext === '.js') contentType = 'application/javascript'; if (ext === '.json') contentType = 'application/json'; if (ext === '.png') contentType = 'image/png'; if (ext === '.jpg' || ext === '.jpeg') contentType = 'image/jpeg'; res.writeHead(200, { 'Content-Type': contentType }); res.end(data); }); }); server.listen(${port}, '127.0.0.1', () => console.log('Serving on port ${port}'));`],
+    [staticServerPath, servePath, port.toString()],
     {
-      cwd: path,
       stdio: ["ignore", "pipe", "pipe"]
     }
   );
