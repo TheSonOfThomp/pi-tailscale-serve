@@ -13,8 +13,7 @@
     "dev": "pi --extension src/index.ts",
     "test": "vitest",
     "test:watch": "vitest watch",
-    "lint": "eslint src --ext .ts",
-    "prepack": "npm run build"
+    "lint": "eslint src --ext .ts"
   },
   "keywords": [
     "pi",
