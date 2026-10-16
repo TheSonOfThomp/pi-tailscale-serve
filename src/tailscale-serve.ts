@@ -118,28 +118,35 @@ async function findAvailablePort(): Promise<number> {
 async function waitForPort(port: number, timeoutMs = 10000): Promise<boolean> {
   const startTime = Date.now();
   const { createConnection } = require("node:net");
+  
   while (Date.now() - startTime < timeoutMs) {
     try {
-      // Try to connect to the port
-      const socket = createConnection({ port, host: "127.0.0.1" });
-      await new Promise((resolveInner, reject) => {
+      const connected = await new Promise<boolean>((resolveInner) => {
+        const socket = createConnection({ port, host: "127.0.0.1" });
+        const timeout = setTimeout(() => {
+          socket.destroy();
+          resolveInner(false);
+        }, 1000);
+        
         socket.on("connect", () => {
+          clearTimeout(timeout);
           socket.destroy();
           resolveInner(true);
         });
+        
         socket.on("error", () => {
+          clearTimeout(timeout);
           socket.destroy();
           resolveInner(false);
         });
-        setTimeout(() => {
-          socket.destroy();
-          reject(new Error("Connection timeout"));
-        }, 1000);
       });
-      return true;
+      
+      if (connected) return true;
     } catch {
-      await new Promise((resolveInner) => setTimeout(resolveInner, 100));
+      // Connection failed, retry
     }
+    
+    await new Promise((resolveInner) => setTimeout(resolveInner, 100));
   }
   return false;
 }

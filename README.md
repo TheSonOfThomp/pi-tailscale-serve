@@ -5,12 +5,14 @@ A [Pi coding agent](https://github.com/earendil-works/pi) extension that enables
 ## Features
 
 - Serve static HTML dashboards
-- Serve framework-based dashboards (React, Vue, Next.js)
+- Serve framework-based dashboards (React, Vue, Next.js) with HMR
 - Serve dynamic content (JSON, Markdown)
-- Automatic inactivity-based cleanup (7 days default)
-- Full Tailscale Magic DNS URL support
+- **NEVER uses port 443** to avoid conflicts with existing services (e.g., Caddy)
+- Full Tailscale Magic DNS URL support with HTTPS
 - Port conflict detection and management
-- Comprehensive error handling with retry logic
+- File-based state persistence across Pi sessions
+- Comprehensive error handling with timeouts
+- Proper cleanup of tailscale serve configs and processes
 
 ## Installation
 
@@ -55,6 +57,17 @@ pi install git:git@github.com:user/repo
 - `git:git@github.com:user/repo` for private repos (requires SSH key without passphrase)
 
 Pi treats `github:user/repo` (without `git:` prefix) as a local path.
+
+## Safety
+
+This extension is designed to be safe to run alongside other services:
+
+- **NEVER uses port 443** - All dashboards are served on high-numbered ports (8000+) to avoid conflicts with Caddy, web servers, or other services
+- **No `tailscale serve reset`** - Only manages configs it creates, never touches existing ones
+- **Proper cleanup** - `stop` command removes both the tailscale serve config and the local server process
+- **Port verification** - Checks if port 443 is in use before serving, and refuses to use it
+- **Directory traversal protection** - Static file server validates all paths are within the served directory
+- **State persistence** - Dashboard metadata is saved to `~/.pi/agent/tailscale-serve/state.json` and cleaned up on stop
 
 **Note:** The extension is written in TypeScript but includes a `pi` manifest, so Pi will load the source directly without needing to build.
 
@@ -195,27 +208,9 @@ Or by path:
 
 ## Configuration
 
-Add to your Pi `settings.json`:
+### Configuration
 
-```json
-{
-  "tailscaleServe": {
-    "inactivityTimeoutDays": 7,
-    "portRange": {
-      "min": 3000,
-      "max": 11000
-    }
-  }
-}
-```
-
-### Settings
-
-| Setting | Type | Default | Description |
-|---------|------|---------|-------------|
-| `inactivityTimeoutDays` | number | 7 | Days of inactivity before auto-cleanup |
-| `portRange.min` | number | 3000 | Minimum port for auto-allocation |
-| `portRange.max` | number | 11000 | Maximum port for auto-allocation |
+The extension uses high-numbered ports (8000+) by default to avoid conflicts. Dashboard state is persisted to `~/.pi/agent/tailscale-serve/state.json`.
 
 Retry settings are inherited from Pi's main `retry` configuration.
 
