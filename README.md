@@ -146,6 +146,37 @@ Pi will automatically:
    }
    ```
 
+## Development
+
+### Releasing
+
+This project uses [Changesets](https://github.com/changesets/changesets) for version management and changelog generation.
+
+To create a new release:
+
+```bash
+# Create a changeset (interactive prompt)
+npx changeset
+
+# Or specify the type explicitly
+npx changeset add --type patch
+```
+
+The GitHub Actions workflow will:
+1. Detect changeset files on the main branch
+2. Update versions in package.json
+3. Update CHANGELOG.md
+4. Publish to npm (requires NPM_TOKEN secret)
+5. Commit and push the version bump
+
+To manually publish (without CI):
+
+```bash
+npm run build
+npm run prepublishOnly
+npm publish --access public
+```
+
 ## Usage
 
 ### Important: Framework Apps (React, Vue, Next.js)
