@@ -14,7 +14,25 @@ A [Pi coding agent](https://github.com/earendil-works/pi) extension that enables
 
 ## Installation
 
-### As a local extension
+### Using `pi install` (Recommended)
+
+```bash
+# Install from local path
+pi install /Users/adam/Documents/GitHub/pi-tailscale-serve
+
+# Or install globally
+pi install /Users/adam/Documents/GitHub/pi-tailscale-serve -l
+
+# Or from GitHub (once published)
+pi install github:adam/pi-tailscale-serve
+```
+
+Pi will automatically:
+- Build the extension (if source files are present)
+- Add it to your settings
+- Load it on startup
+
+### Manual installation
 
 1. Clone this repository:
    ```bash
@@ -29,11 +47,12 @@ A [Pi coding agent](https://github.com/earendil-works/pi) extension that enables
    pi --extension ./dist/index.js
    ```
 
-### As a Pi package (TBD)
-
-```bash
-pi --package github:your-username/pi-tailscale-serve
-```
+3. Or add to your Pi settings:
+   ```json
+   {
+     "extensions": ["/Users/adam/Documents/GitHub/pi-tailscale-serve/dist/index.js"]
+   }
+   ```
 
 ## Usage
 
