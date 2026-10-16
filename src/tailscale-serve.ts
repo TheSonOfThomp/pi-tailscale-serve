@@ -25,16 +25,26 @@ interface DashboardMetadata {
 
 const dashboards: Map<string, DashboardMetadata> = new Map();
 
-// Helper: execute tailscale command
-async function execTailscale(args: string[]): Promise<{ stdout: string; stderr: string; code: number }> {
+// Helper: execute tailscale command with timeout
+async function execTailscale(args: string[], timeoutMs = 5000): Promise<{ stdout: string; stderr: string; code: number }> {
   return new Promise((resolve) => {
     const child = spawn("tailscale", args, { stdio: ["ignore", "pipe", "pipe"] });
     let stdout = "";
     let stderr = "";
+    const timeout = setTimeout(() => {
+      child.kill("SIGTERM");
+      resolve({ stdout: "", stderr: `tailscale command timed out after ${timeoutMs}ms`, code: 124 });
+    }, timeoutMs);
     child.stdout.on("data", (data) => (stdout += data.toString()));
     child.stderr.on("data", (data) => (stderr += data.toString()));
-    child.on("close", (code) => resolve({ stdout, stderr, code: code || 0 }));
-    child.on("error", (e) => resolve({ stdout: "", stderr: e.message, code: 1 }));
+    child.on("close", (code) => {
+      clearTimeout(timeout);
+      resolve({ stdout, stderr, code: code || 0 });
+    });
+    child.on("error", (e) => {
+      clearTimeout(timeout);
+      resolve({ stdout: "", stderr: e.message, code: 1 });
+    });
   });
 }
 
