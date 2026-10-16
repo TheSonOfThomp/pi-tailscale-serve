@@ -76,8 +76,8 @@ async function findAvailablePort(): Promise<number> {
 async function startStaticServer(servePath: string): Promise<{ process: ChildProcess; port: number }> {
   const port = await findAvailablePort();
   
-  // Use the static-server.js helper
-  const staticServerPath = join(__dirname, "static-server.js");
+  // Use the static-server.js helper - resolve path relative to this file
+  const staticServerPath = resolve(__dirname, "static-server.js");
   const child = spawn(
     "node",
     [staticServerPath, servePath, port.toString()],
