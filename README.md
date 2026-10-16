@@ -14,17 +14,35 @@ A [Pi coding agent](https://github.com/earendil-works/pi) extension that enables
 
 ## Installation
 
-### Using `pi install` (Recommended)
+### Using NPM (Recommended)
 
 ```bash
-# Install from local path (works for development)
-pi install /Users/adam/Documents/GitHub/pi-tailscale-serve
+npm install -g @thesonofthomp/pi-tailscale-serve
+```
 
-# Or install globally
-pi install /Users/adam/Documents/GitHub/pi-tailscale-serve -l
+Then load it in Pi:
+```bash
+pi --extension @thesonofthomp/pi-tailscale-serve
+```
+
+Or add to your Pi settings:
+```json
+{
+  "extensions": ["@thesonofthomp/pi-tailscale-serve"]
+}
+```
+
+### Using `pi install`
+
+```bash
+# Install from NPM
+pi install npm:@thesonofthomp/pi-tailscale-serve
 
 # Or from GitHub (public repo - no SSH needed)
 pi install git:https://github.com/TheSonOfThomp/pi-tailscale-serve
+
+# Or from local path (works for development)
+pi install /Users/adam/Documents/GitHub/pi-tailscale-serve
 ```
 
 For private repositories, ensure your SSH key is configured (without passphrase) and use:

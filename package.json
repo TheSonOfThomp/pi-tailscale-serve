@@ -1,16 +1,24 @@
 {
-  "name": "pi-tailscale-serve",
+  "name": "@thesonofthomp/pi-tailscale-serve",
   "version": "0.1.0",
   "description": "Pi coding agent extension for serving temporary dashboards via Tailscale",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/index.js",
+      "import": "./dist/index.js"
+    }
+  },
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
     "dev": "pi --extension src/index.ts",
     "test": "vitest",
     "test:watch": "vitest watch",
-    "lint": "eslint src --ext .ts"
+    "lint": "eslint src --ext .ts",
+    "prepack": "npm run build",
+    "prepare": "npm run build"
   },
   "keywords": [
     "pi",
@@ -19,8 +27,16 @@
     "dashboard",
     "serving"
   ],
-  "author": "Adam",
+  "author": "Adam Thompson <adam@thesonofthomp.com>",
   "license": "MIT",
+  "homepage": "https://github.com/TheSonOfThomp/pi-tailscale-serve#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TheSonOfThomp/pi-tailscale-serve.git"
+  },
+  "bugs": {
+    "url": "https://github.com/TheSonOfThomp/pi-tailscale-serve/issues"
+  },
   "pi": {
     "extensions": ["src/index.ts"]
   },
@@ -42,5 +58,12 @@
   },
   "engines": {
     "node": ">=24.0.0"
-  }
+  },
+  "files": [
+    "dist",
+    "src",
+    "package.json",
+    "README.md",
+    "LICENSE"
+  ]
 }
