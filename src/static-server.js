@@ -26,20 +26,39 @@ const mimeTypes = {
   '.md': 'text/markdown',
 };
 
+const resolvedRoot = path.resolve(targetPath);
+
 const server = http.createServer((req, res) => {
-  let filepath = path.join(targetPath, url.parse(req.url!).pathname);
+  const parsedUrl = url.parse(req.url);
+  let filepath = path.join(resolvedRoot, parsedUrl.pathname || '');
   
   // Security: prevent directory traversal
-  if (!filepath.startsWith(path.resolve(targetPath) + path.sep) && 
-      !filepath.startsWith(path.resolve(targetPath))) {
+  // Normalize the path and ensure it's within the root directory
+  const normalizedPath = path.normalize(filepath);
+  if (!normalizedPath.startsWith(resolvedRoot + path.sep) && 
+      !normalizedPath.startsWith(resolvedRoot)) {
     res.writeHead(403);
-    res.end('Forbidden');
+    res.end('Forbidden: directory traversal detected');
     return;
   }
   
-  // Default to index.html
-  if (filepath.endsWith(path.sep)) {
-    filepath = path.join(filepath, 'index.html');
+  // Default to index.html for directory requests
+  try {
+    const stats = fs.statSync(filepath);
+    if (stats.isDirectory()) {
+      filepath = path.join(filepath, 'index.html');
+    }
+  } catch (e) {
+    // File doesn't exist, try index.html
+    if (e.code === 'ENOENT') {
+      const indexPath = path.join(filepath, 'index.html');
+      try {
+        fs.statSync(indexPath);
+        filepath = indexPath;
+      } catch (e2) {
+        // index.html doesn't exist either
+      }
+    }
   }
   
   fs.readFile(filepath, (err, data) => {
