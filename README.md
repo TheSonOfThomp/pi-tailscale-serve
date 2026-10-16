@@ -29,6 +29,8 @@ pi install git@github.com:TheSonOfThomp/pi-tailscale-serve
 
 **Note:** For private GitHub repositories, use the SSH form (`git@github.com:user/repo`) as Pi treats `github:user/repo` as a local path. HTTPS form requires credentials and may not work.
 
+**Note:** The extension is written in TypeScript but includes a `pi` manifest, so Pi will load the source directly without needing to build.
+
 Pi will automatically:
 - Build the extension (if source files are present)
 - Add it to your settings
