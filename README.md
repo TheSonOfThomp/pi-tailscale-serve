@@ -71,6 +71,54 @@ This extension is designed to be safe to run alongside other services:
 
 **Note:** The extension is written in TypeScript but includes a `pi` manifest, so Pi will load the source directly without needing to build.
 
+## Testing
+
+Run the test suite to verify safety constraints:
+
+```bash
+npm test
+```
+
+The test suite verifies:
+- ✅ Port 443 is never used for tailscale serve
+- ✅ Correct `tailscale serve --https=<port> off` command (not `clear`)
+- ✅ Static server JavaScript is valid (`node --check` passes)
+- ✅ Static dashboards are exposed via tailscale serve
+- ✅ Server startup verification with port polling
+- ✅ State persistence is implemented
+- ✅ Build completes without errors
+
+### Manual Integration Tests
+
+For full integration testing (requires tailscale and Caddy running):
+
+```bash
+# 1. Verify Caddy is working on port 443
+curl -sS -o /dev/null -w '%{http_code}\n' https://omni.adamt.cc/
+# Should return: 200
+
+# 2. Serve a test dashboard
+pi --print --no-session "Serve /tmp/test-dashboard"
+
+# 3. Verify Caddy still works
+curl -sS -o /dev/null -w '%{http_code}\n' https://omni.adamt.cc/
+# Should return: 200
+
+# 4. Check tailscale serve status (should show high port, never 443)
+tailscale serve status
+
+# 5. Stop the dashboard
+pi --print --no-session "Stop that dashboard"
+
+# 6. Verify tailscale serve config is removed
+tailscale serve status
+# Should show: No serve config
+
+# 7. Verify Caddy still works
+curl -sS -o /dev/null -w '%{http_code}\n' https://omni.adamt.cc/
+# Should return: 200
+```
+
 Pi will automatically:
 - Build the extension (if source files are present)
 - Add it to your settings

@@ -11,8 +11,9 @@
     "build": "tsc",
     "watch": "tsc -w",
     "dev": "pi --extension src/index.ts",
-    "test": "vitest",
+    "test": "vitest run",
     "test:watch": "vitest watch",
+    "test:coverage": "vitest run --coverage",
     "lint": "eslint src --ext .ts",
     "prepublishOnly": "npm run build"
   },
