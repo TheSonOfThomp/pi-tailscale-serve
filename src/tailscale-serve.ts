@@ -533,6 +533,4 @@ export default function (pi: ExtensionAPI) {
     };
     pi.registerTool(namespacedTool);
   }
-
-  console.log("tailscale-serve extension loaded");
 }
