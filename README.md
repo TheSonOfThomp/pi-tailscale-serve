@@ -56,46 +56,81 @@ Pi will automatically:
 
 ## Usage
 
+### Important: Framework Apps (React, Vue, Next.js)
+
+**For framework-based apps, the extension automatically starts the dev server with HMR (Hot Module Replacement) enabled.** This means:
+
+- ✅ **Live reloading** - Changes to your code are reflected immediately
+- ✅ **Full dev experience** - Source maps, error overlays, etc.
+- ✅ **No build step** - Uses `npm run dev` or similar
+
+The extension detects the framework and runs the appropriate dev command:
+- React: `npm run dev` (or `start`)
+- Vue: `npm run dev`
+- Next.js: `npm run dev`
+
 ### Serve a static dashboard
 
+For plain HTML/CSS/JS files:
 ```
 /serve a static dashboard from ./my-dashboard
 ```
 
 Or explicitly:
 ```
-/tailscale-serve.serve_static path:./my-dashboard persist:true
+/tailscale-serve.serve_dashboard path:./my-dashboard
 ```
 
-### Serve a React app
+### Serve a React app with HMR
 
 ```
-/tailscale-serve.serve_react path:./my-react-app
+/tailscale-serve.serve_dashboard path:./my-react-app
 ```
 
 The extension will:
 1. Detect it's a React app (via package.json)
-2. Start the dev server on an OS-assigned port
+2. Start `npm run dev` on an OS-assigned port
 3. Expose it via `tailscale serve <port>`
 4. Return the Tailscale URL
+5. **HMR works** - Edit your React files and see changes live!
 
-### Serve a Vue app
-
-```
-/tailscale-serve.serve_vue path:./my-vue-app
-```
-
-### Serve a Next.js app
+### Serve a Vue app with HMR
 
 ```
-/tailscale-serve.serve_next path:./my-next-app
+/tailscale-serve.serve_dashboard path:./my-vue-app
+```
+
+Same HMR benefits as React.
+
+### Serve a Next.js app with HMR
+
+```
+/tailscale-serve.serve_dashboard path:./my-next-app
 ```
 
 ### Auto-detect and serve
 
+For any dashboard type, just use:
 ```
 /tailscale-serve.serve_dashboard path:./my-dashboard
 ```
+
+The extension auto-detects:
+- Static HTML → serves files directly
+- React/Vue/Next.js → starts dev server with HMR
+- JSON/Markdown → generates a viewer
+
+### Natural language (auto-discoverable)
+
+You can also use natural language:
+```
+Serve this folder
+Make this React app accessible
+Host my dashboard
+Share this with my team
+```
+
+The model will automatically invoke the appropriate tool.
 
 The extension will auto-detect the type based on file extensions and directory contents.
 

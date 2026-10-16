@@ -5,7 +5,7 @@
 
 import { Type } from "@earendil-works/pi-ai";
 import { defineTool, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { spawn } from "node:child_process";
+import { spawn, type ChildProcess } from "node:child_process";
 import { promises as fs } from "node:fs";
 import { resolve, join, dirname } from "node:path";
 import { v4 as uuidv4 } from "uuid";
@@ -14,11 +14,13 @@ import { v4 as uuidv4 } from "uuid";
 interface DashboardMetadata {
   id: string;
   path: string;
-  type: string;
+  type: "static" | "react" | "vue" | "next" | "dynamic";
   url: string;
   port: number;
   persist: boolean;
   createdAt: string;
+  frameworkPort?: number;
+  frameworkProcess?: ChildProcess;
 }
 
 const dashboards: Map<string, DashboardMetadata> = new Map();
@@ -47,11 +49,110 @@ async function getTailscaleHostname(): Promise<string> {
   }
 }
 
+// Helper: find available port
+async function findAvailablePort(): Promise<number> {
+  return new Promise((resolve) => {
+    const server = require("node:http").createServer();
+    server.listen(0, "127.0.0.1", () => {
+      const address = server.address();
+      const port = typeof address === "object" && address ? address.port : 0;
+      server.close();
+      resolve(port);
+    });
+  });
+}
+
+// Helper: detect framework type
+async function detectFramework(path: string): Promise<"static" | "react" | "vue" | "next" | null> {
+  try {
+    const pkgPath = join(path, "package.json");
+    const pkgContent = await fs.readFile(pkgPath, "utf-8");
+    const pkg = JSON.parse(pkgContent);
+
+    if (pkg.dependencies?.next) {
+      return "next";
+    }
+    if (pkg.dependencies?.vue) {
+      return "vue";
+    }
+    if (pkg.dependencies?.react) {
+      return "react";
+    }
+  } catch {
+    // No package.json or can't read it
+  }
+
+  // Check for framework-specific files
+  try {
+    const files = await fs.readdir(path);
+    if (files.includes("next.config.js") || files.includes("next.config.ts")) {
+      return "next";
+    }
+    if (files.includes("vue.config.js") || files.includes("vue.config.ts")) {
+      return "vue";
+    }
+    if (files.includes("vite.config.js") || files.includes("vite.config.ts")) {
+      // Could be React or Vue with Vite
+      const pkgPath = join(path, "package.json");
+      try {
+        const pkgContent = await fs.readFile(pkgPath, "utf-8");
+        const pkg = JSON.parse(pkgContent);
+        if (pkg.dependencies?.vue) return "vue";
+        if (pkg.dependencies?.react) return "react";
+      } catch {
+        // Can't determine, default to static
+      }
+    }
+  } catch {
+    // Can't read directory
+  }
+
+  return "static";
+}
+
+// Helper: start framework dev server
+async function startFrameworkServer(
+  path: string,
+  framework: "react" | "vue" | "next"
+): Promise<{ process: ChildProcess; port: number }> {
+  const port = await findAvailablePort();
+
+  let command: string;
+  let args: string[];
+
+  switch (framework) {
+    case "react":
+      command = "npm";
+      args = ["run", "dev", "--", "--port", port.toString()];
+      break;
+    case "vue":
+      command = "npm";
+      args = ["run", "dev", "--", "--port", port.toString()];
+      break;
+    case "next":
+      command = "npm";
+      args = ["run", "dev", "--", "--port", port.toString()];
+      break;
+    default:
+      throw new Error(`Unknown framework: ${framework}`);
+  }
+
+  const child = spawn(command, args, {
+    cwd: path,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+
+  // Wait a bit for the server to start
+  await new Promise((resolve) => setTimeout(resolve, 3000));
+
+  return { process: child, port };
+}
+
 // Tool 1: Serve a dashboard (auto-detect)
 const serveDashboardTool = defineTool({
   name: "serve_dashboard",
   label: "Serve Dashboard",
-  description: "Serve a dashboard, website, or web app via Tailscale. Auto-detects static HTML, React, Vue, Next.js, or dynamic content. Use when you want to share a dashboard with others on your tailnet. Examples: 'Serve this folder', 'Make this React app accessible', 'Share this HTML file', 'Host this dashboard'.",
+  description: "Serve a dashboard, website, or web app via Tailscale. Auto-detects static HTML, React, Vue, Next.js, or dynamic content. For framework apps (React/Vue/Next.js), automatically starts the dev server with HMR (Hot Module Replacement) enabled. Use when you want to share a dashboard with others on your tailnet. Examples: 'Serve this folder', 'Make this React app accessible', 'Share this HTML file', 'Host this dashboard with HMR'.",
   parameters: Type.Object({
     path: Type.Optional(Type.String({
       description: "Path to the dashboard directory or file. Defaults to current directory.",
@@ -76,50 +177,66 @@ const serveDashboardTool = defineTool({
       throw new Error(`Path ${path} does not exist: ${error}`);
     }
 
-    // Serve via tailscale
-    const result = await execTailscale(["serve", path, "--bg"]);
-    if (result.code !== 0) {
-      throw new Error(`Failed to serve: ${result.stderr || result.stdout}`);
+    // Detect framework type
+    const framework = await detectFramework(path) || "static";
+
+    let tailscalePort: number;
+    let frameworkProcess: ChildProcess | undefined;
+    let frameworkPort: number | undefined;
+
+    if (framework === "static") {
+      // Serve static files directly
+      const result = await execTailscale(["serve", path, "--bg"]);
+      if (result.code !== 0) {
+        throw new Error(`Failed to serve: ${result.stderr || result.stdout}`);
+      }
+
+      // Try to extract port from output
+      const portMatch = result.stdout.match(/port\s+(\d+)/i) || result.stdout.match(/:(\d+)/);
+      tailscalePort = portMatch ? parseInt(portMatch[1], 10) : 8080;
+    } else {
+      // Start framework dev server with HMR
+      const { process: proc, port: fPort } = await startFrameworkServer(path, framework);
+      frameworkProcess = proc;
+      frameworkPort = fPort;
+
+      // Expose the framework port via tailscale
+      const result = await execTailscale(["serve", frameworkPort.toString(), "--bg"]);
+      if (result.code !== 0) {
+        // Clean up framework process
+        frameworkProcess.kill("SIGTERM");
+        throw new Error(`Failed to serve: ${result.stderr || result.stdout}`);
+      }
+
+      tailscalePort = frameworkPort;
     }
 
     // Get hostname and construct URL
     const hostname = await getTailscaleHostname();
-    // Try to extract port from output or use a default
-    let port = 0;
-    const portMatch = result.stdout.match(/port\s+(\d+)/i) || result.stdout.match(/:(\d+)/);
-    if (portMatch) {
-      port = parseInt(portMatch[1], 10);
-    }
-
-    // If we can't determine port, try to get it from tailscale status
-    if (port === 0) {
-      const status = await execTailscale(["serve", "status", "--json"]);
-      try {
-        const serveStatus = JSON.parse(status.stdout || "{}");
-        // This is a simplified approach - in reality we'd need to parse the status
-        port = 8080; // Default fallback
-      } catch {
-        port = 8080;
-      }
-    }
-
-    const url = `https://${hostname}.ts.net:${port}`;
+    const url = `https://${hostname}.ts.net:${tailscalePort}`;
 
     // Create metadata
     const metadata: DashboardMetadata = {
       id: uuidv4(),
       path,
-      type: "static", // Simplified for now
+      type: framework === "static" ? "static" : framework === "react" ? "react" : framework === "vue" ? "vue" : "next",
       url,
-      port,
+      port: tailscalePort,
       persist,
       createdAt: new Date().toISOString(),
+      frameworkPort,
+      frameworkProcess,
     };
 
     dashboards.set(metadata.id, metadata);
 
+    // Return HMR info for framework apps
+    const hmrInfo = framework !== "static" 
+      ? ` with HMR enabled on port ${frameworkPort}. Edit your files and see changes live!`
+      : "";
+
     return {
-      content: [{ type: "text", text: `Dashboard served at: ${url}` }],
+      content: [{ type: "text", text: `Dashboard served at: ${url}${hmrInfo}` }],
       details: metadata,
     };
   },
@@ -129,12 +246,12 @@ const serveDashboardTool = defineTool({
 const listDashboardsTool = defineTool({
   name: "list_dashboards",
   label: "List Dashboards",
-  description: "List all currently served dashboards with their URLs. Examples: 'What dashboards are running?', 'Show me my hosted dashboards', 'List active serves'.",
+  description: "List all currently served dashboards with their URLs, types, and HMR status. Use to see what's currently hosted or to find a dashboard URL. Examples: 'What dashboards are running?', 'Show me my hosted dashboards', 'List active serves'.",
   parameters: Type.Object({}),
 
-  async execute() {
+  async execute(_toolCallId, _params, _signal, _onUpdate, _ctx) {
     const dashboardList = Array.from(dashboards.values());
-    
+
     if (dashboardList.length === 0) {
       return {
         content: [{ type: "text", text: "No dashboards are currently being served." }],
@@ -145,7 +262,12 @@ const listDashboardsTool = defineTool({
     const lines = [
       `Found ${dashboardList.length} active dashboard(s):`,
       "",
-      ...dashboardList.map((d) => `  - ${d.url} (${d.type}, created: ${d.createdAt})`),
+      ...dashboardList.map((d) => {
+        const hmrInfo = d.type !== "static" && d.frameworkPort 
+          ? ` (HMR on port ${d.frameworkPort})`
+          : "";
+        return `  - ${d.url} (${d.type}${hmrInfo}, created: ${d.createdAt})`;
+      }),
     ];
 
     return {
@@ -159,7 +281,7 @@ const listDashboardsTool = defineTool({
 const stopDashboardTool = defineTool({
   name: "stop",
   label: "Stop Dashboard",
-  description: "Stop serving a dashboard by port, URL, or path. Examples: 'Stop dashboard on port 3000', 'Stop serving that dashboard', 'Clean up the dashboard'.",
+  description: "Stop serving a dashboard by port, URL, or path. Also stops any running dev server. Examples: 'Stop dashboard on port 3000', 'Stop serving that dashboard', 'Clean up the React app I served earlier', 'Remove dashboard at /path/to/files'.",
   parameters: Type.Object({
     port: Type.Optional(Type.Number({ description: "The port the dashboard is served on" })),
     url: Type.Optional(Type.String({ description: "The full Tailscale URL of the dashboard" })),
@@ -169,10 +291,10 @@ const stopDashboardTool = defineTool({
   async execute(_toolCallId, params) {
     // Find dashboard by any identifier
     let dashboard: DashboardMetadata | undefined;
-    
+
     if (params.port) {
       for (const d of dashboards.values()) {
-        if (d.port === params.port) {
+        if (d.port === params.port || d.frameworkPort === params.port) {
           dashboard = d;
           break;
         }
@@ -198,9 +320,18 @@ const stopDashboardTool = defineTool({
       throw new Error("No dashboard found matching the provided identifier");
     }
 
+    // Stop framework dev server if running
+    if (dashboard.frameworkProcess) {
+      try {
+        dashboard.frameworkProcess.kill("SIGTERM");
+      } catch (error) {
+        console.warn(`Failed to stop framework process: ${error}`);
+      }
+    }
+
     // Stop tailscale serve
     await execTailscale(["serve", "clear", dashboard.path]);
-    
+
     // Remove from tracker
     dashboards.delete(dashboard.id);
 
@@ -221,7 +352,7 @@ export default function (pi: ExtensionAPI) {
       name: `tailscale-serve.${tool.name}`,
       namespace: {
         name: "tailscale-serve",
-        description: "Serve dashboards via Tailscale",
+        description: "Serve dashboards via Tailscale with HMR support for framework apps",
       },
     };
     pi.registerTool(namespacedTool);
