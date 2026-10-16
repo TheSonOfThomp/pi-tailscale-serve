@@ -20,7 +20,7 @@ interface DashboardMetadata {
   persist: boolean;
   createdAt: string;
   frameworkPort?: number;
-  frameworkProcess?: ChildProcess;
+  frameworkPid?: number;
 }
 
 const dashboards: Map<string, DashboardMetadata> = new Map();
@@ -211,26 +211,26 @@ const serveDashboardTool = defineTool({
     const framework = await detectFramework(path) || "static";
 
     let tailscalePort: number;
-    let frameworkProcess: ChildProcess | undefined;
+    let frameworkPid: number | undefined;
     let frameworkPort: number | undefined;
 
     if (framework === "static") {
       // Start a local static file server (macOS doesn't support tailscale serve for paths)
       const { process: staticProc, port: staticPort } = await startStaticServer(path);
-      frameworkProcess = staticProc;
+      frameworkPid = staticProc.pid;
       frameworkPort = staticPort;
       tailscalePort = staticPort;
     } else {
       // Start framework dev server with HMR
       const { process: proc, port: fPort } = await startFrameworkServer(path, framework);
-      frameworkProcess = proc;
+      frameworkPid = proc.pid;
       frameworkPort = fPort;
 
       // Expose the framework port via tailscale
       const result = await execTailscale(["serve", frameworkPort.toString(), "--bg"]);
       if (result.code !== 0) {
         // Clean up framework process
-        frameworkProcess.kill("SIGTERM");
+        try { proc.kill("SIGTERM"); } catch {}
         throw new Error(`Failed to serve: ${result.stderr || result.stdout}`);
       }
 
@@ -251,7 +251,7 @@ const serveDashboardTool = defineTool({
       persist,
       createdAt: new Date().toISOString(),
       frameworkPort,
-      frameworkProcess,
+      frameworkPid,
     };
 
     dashboards.set(metadata.id, metadata);
@@ -347,9 +347,9 @@ const stopDashboardTool = defineTool({
     }
 
     // Stop framework dev server if running
-    if (dashboard.frameworkProcess) {
+    if (dashboard.frameworkPid) {
       try {
-        dashboard.frameworkProcess.kill("SIGTERM");
+        process.kill(dashboard.frameworkPid, "SIGTERM");
       } catch (error) {
         console.warn(`Failed to stop framework process: ${error}`);
       }
