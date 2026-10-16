@@ -17,18 +17,18 @@ A [Pi coding agent](https://github.com/earendil-works/pi) extension that enables
 ### Using NPM (Recommended)
 
 ```bash
-npm install -g @thesonofthomp/pi-tailscale-serve
+npm install -g pi-tailscale-serve
 ```
 
 Then load it in Pi:
 ```bash
-pi --extension @thesonofthomp/pi-tailscale-serve
+pi --extension pi-tailscale-serve
 ```
 
 Or add to your Pi settings:
 ```json
 {
-  "extensions": ["@thesonofthomp/pi-tailscale-serve"]
+  "extensions": ["pi-tailscale-serve"]
 }
 ```
 
@@ -36,7 +36,7 @@ Or add to your Pi settings:
 
 ```bash
 # Install from NPM
-pi install npm:@thesonofthomp/pi-tailscale-serve
+pi install npm:pi-tailscale-serve
 
 # Or from GitHub (public repo - no SSH needed)
 pi install git:https://github.com/TheSonOfThomp/pi-tailscale-serve

@@ -1,5 +1,5 @@
 {
-  "name": "@thesonofthomp/pi-tailscale-serve",
+  "name": "pi-tailscale-serve",
   "version": "0.1.0",
   "description": "Pi coding agent extension for serving temporary dashboards via Tailscale",
   "main": "dist/index.js",
@@ -65,5 +65,8 @@
     "package.json",
     "README.md",
     "LICENSE"
-  ]
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
 }
