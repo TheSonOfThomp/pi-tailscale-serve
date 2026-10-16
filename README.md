@@ -24,10 +24,10 @@ pi install /Users/adam/Documents/GitHub/pi-tailscale-serve
 pi install /Users/adam/Documents/GitHub/pi-tailscale-serve -l
 
 # Or from GitHub (SSH - works with private repos)
-pi install git@github.com:TheSonOfThomp/pi-tailscale-serve
+pi install git:git@github.com:TheSonOfThomp/pi-tailscale-serve
 ```
 
-**Note:** For private GitHub repositories, use the SSH form (`git@github.com:user/repo`) as Pi treats `github:user/repo` as a local path. HTTPS form requires credentials and may not work.
+**Note:** For GitHub repositories, use the `git:git@github.com:user/repo` form (with `git:` prefix). Pi treats `github:user/repo` as a local path. HTTPS form requires credentials and may not work.
 
 **Note:** The extension is written in TypeScript but includes a `pi` manifest, so Pi will load the source directly without needing to build.
 
