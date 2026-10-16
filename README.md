@@ -17,17 +17,19 @@ A [Pi coding agent](https://github.com/earendil-works/pi) extension that enables
 ### Using `pi install` (Recommended)
 
 ```bash
-# Install from local path
+# Install from local path (works for development)
 pi install /Users/adam/Documents/GitHub/pi-tailscale-serve
 
 # Or install globally
 pi install /Users/adam/Documents/GitHub/pi-tailscale-serve -l
+```
 
-# Or from GitHub (SSH - works with private repos)
+For GitHub installation with private repos, ensure your SSH key is configured and use:
+```bash
 pi install git:git@github.com:TheSonOfThomp/pi-tailscale-serve
 ```
 
-**Note:** For GitHub repositories, use the `git:git@github.com:user/repo` form (with `git:` prefix). Pi treats `github:user/repo` as a local path. HTTPS form requires credentials and may not work.
+**Note:** For GitHub repositories, use the `git:git@github.com:user/repo` form (with `git:` prefix). Pi treats `github:user/repo` as a local path. HTTPS form requires credentials and may not work with private repos.
 
 **Note:** The extension is written in TypeScript but includes a `pi` manifest, so Pi will load the source directly without needing to build.
 
