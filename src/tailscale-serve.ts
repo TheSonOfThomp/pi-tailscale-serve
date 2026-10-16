@@ -72,6 +72,27 @@ async function findAvailablePort(): Promise<number> {
   });
 }
 
+// Helper: start static file server
+async function startStaticServer(path: string): Promise<{ process: ChildProcess; port: number }> {
+  const port = await findAvailablePort();
+  
+  // Use Node.js http-server or simple static server
+  // For now, use a simple Node.js static file server
+  const child = spawn(
+    "node",
+    ["-e", `const http = require('http'); const fs = require('fs'); const path = require('path'); const url = require('url'); const server = http.createServer((req, res) => { const filepath = path.join('${path}', url.parse(req.url!).pathname); fs.readFile(filepath, (err, data) => { if (err) { res.writeHead(404); res.end('Not Found'); return; } const ext = path.extname(filepath); let contentType = 'text/html'; if (ext === '.css') contentType = 'text/css'; if (ext === '.js') contentType = 'application/javascript'; if (ext === '.json') contentType = 'application/json'; if (ext === '.png') contentType = 'image/png'; if (ext === '.jpg' || ext === '.jpeg') contentType = 'image/jpeg'; res.writeHead(200, { 'Content-Type': contentType }); res.end(data); }); }); server.listen(${port}, '127.0.0.1', () => console.log('Serving on port ${port}'));`],
+    {
+      cwd: path,
+      stdio: ["ignore", "pipe", "pipe"]
+    }
+  );
+
+  // Wait for server to start
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+
+  return { process: child, port };
+}
+
 // Helper: detect framework type
 async function detectFramework(path: string): Promise<"static" | "react" | "vue" | "next" | null> {
   try {
@@ -195,15 +216,11 @@ const serveDashboardTool = defineTool({
     let frameworkPort: number | undefined;
 
     if (framework === "static") {
-      // Serve static files directly
-      const result = await execTailscale(["serve", path, "--bg"]);
-      if (result.code !== 0) {
-        throw new Error(`Failed to serve: ${result.stderr || result.stdout}`);
-      }
-
-      // Try to extract port from output
-      const portMatch = result.stdout.match(/port\s+(\d+)/i) || result.stdout.match(/:(\d+)/);
-      tailscalePort = portMatch ? parseInt(portMatch[1], 10) : 8080;
+      // Start a local static file server (macOS doesn't support tailscale serve for paths)
+      const { process: staticProc, port: staticPort } = await startStaticServer(path);
+      frameworkProcess = staticProc;
+      frameworkPort = staticPort;
+      tailscalePort = staticPort;
     } else {
       // Start framework dev server with HMR
       const { process: proc, port: fPort } = await startFrameworkServer(path, framework);
