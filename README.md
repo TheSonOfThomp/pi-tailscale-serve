@@ -23,9 +23,11 @@ pi install /Users/adam/Documents/GitHub/pi-tailscale-serve
 # Or install globally
 pi install /Users/adam/Documents/GitHub/pi-tailscale-serve -l
 
-# Or from GitHub (once published)
-pi install github:adam/pi-tailscale-serve
+# Or from GitHub (SSH - works with private repos)
+pi install git@github.com:TheSonOfThomp/pi-tailscale-serve
 ```
+
+**Note:** For private GitHub repositories, use the SSH form (`git@github.com:user/repo`) as Pi treats `github:user/repo` as a local path. HTTPS form requires credentials and may not work.
 
 Pi will automatically:
 - Build the extension (if source files are present)
@@ -34,9 +36,9 @@ Pi will automatically:
 
 ### Manual installation
 
-1. Clone this repository:
+1. Clone this repository (use SSH for private repos):
    ```bash
-   git clone https://github.com/your-username/pi-tailscale-serve.git
+   git clone git@github.com:TheSonOfThomp/pi-tailscale-serve.git
    cd pi-tailscale-serve
    npm install
    npm run build
