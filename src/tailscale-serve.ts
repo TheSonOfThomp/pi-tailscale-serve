@@ -525,7 +525,7 @@ export default function (pi: ExtensionAPI) {
   for (const tool of tools) {
     const namespacedTool = {
       ...tool,
-      name: `tailscale-serve.${tool.name}`,
+      name: `tailscale_serve_${tool.name}`,
       namespace: {
         name: "tailscale-serve",
         description: "Serve dashboards via Tailscale with HMR support for framework apps",
